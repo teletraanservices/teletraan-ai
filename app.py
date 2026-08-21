@@ -144,7 +144,7 @@ if prompt_usuario:
 
                 # Llamar al modelo con la configuración de Alchemax
                 respuesta = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.6-flash",
                     contents=historial_conversacion,
                     config=configuracion_modelo
                 )
