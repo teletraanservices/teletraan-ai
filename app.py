@@ -2,25 +2,30 @@ import io
 import os
 import streamlit as st
 from PIL import Image
-from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+# Cargar variables de entorno locales si existen (desarrollo)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # ---------------------------------------------------------
 # 1. CONFIGURACIÓN DE PÁGINA Y ENTORNO (ALCHEMAX)
 # ---------------------------------------------------------
-load_dotenv()
-
 st.set_page_config(
     page_title="Alchemax AI - Sistema Educativo",
     page_icon="⚡",
     layout="wide"
 )
 
-# Inicializar cliente de Google GenAI
-api_key = os.getenv("GEMINI_API_KEY")
+# Obtener API Key (Compatible con .env local y Streamlit Secrets)
+api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+
 if not api_key:
-    st.error("⚠️ No se encontró la GEMINI_API_KEY en el archivo .env")
+    st.error("⚠️ No se encontró la GEMINI_API_KEY en la configuración.")
     st.stop()
 
 client = genai.Client(api_key=api_key)
