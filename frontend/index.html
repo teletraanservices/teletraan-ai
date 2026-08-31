@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TELETRAAN AI - Cybertronian Subsystem</title>
+    <!-- Favicon / Logo -->
+    <link rel="icon" type="image/png" href="logo.png">
+    
+    <!-- Fuentes Futuristas desde Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js para formatear respuestas Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        /* Estilos Cyberpunk / Teletraan personalizados */
+        body {
+            font-family: 'Fira Code', monospace;
+            background: radial-gradient(circle at top, #06101e 0%, #020611 100%);
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .teletraan-card {
+            background: rgba(10, 18, 32, 0.85);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        .teletraan-glow {
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.4);
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+        }
+        /* Personalización de barra de desplazamiento */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020611;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0369a1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-cyan-100 min-h-screen flex flex-col justify-between selection:bg-sky-500 selection:text-black">
+
+    <!-- BARRA SUPERIOR (HEADER) -->
+    <header class="border-b border-sky-900/60 bg-black/40 backdrop-blur sticky top-0 z-50 px-6 py-3">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <img src="logo.png" alt="Teletraan Logo" class="w-12 h-12 rounded-full border-2 border-sky-400 p-0.5 teletraan-glow object-cover">
+                    <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-400 border-2 border-black rounded-full animate-ping"></span>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-orbitron font-black text-sky-400 tracking-wider glow-text flex items-center gap-2">
+                        TELETRAAN AI
+                        <span class="text-xs font-normal text-sky-600 bg-sky-950/80 px-2 py-0.5 rounded border border-sky-800">v3.6</span>
+                    </h1>
+                    <p class="text-xs text-sky-500/80 tracking-widest uppercase">Cybertronian Academic System // Dev by Maximiliano</p>
+                </div>
+            </div>
+
+            <div class="hidden sm:flex items-center gap-3">
+                <div class="text-right">
+                    <p class="text-xs text-sky-400 font-bold uppercase tracking-wider">Estado del Núcleo</p>
+                    <p class="text-[10px] text-emerald-400 animate-pulse">100% OPERATIVO</p>
+                </div>
+                <div class="w-3 h-3 rounded-full bg-sky-500 teletraan-glow animate-pulse"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ÁREA DE CONSOLA / CHAT -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 flex flex-col justify-between my-2">
+        <div id="chat-box" class="space-y-4 overflow-y-auto max-h-[70vh] p-4 rounded-xl border border-sky-900/40 bg-black/40 backdrop-blur">
+            
+            <!-- Mensaje Inicial de Bienvenida -->
+            <div class="teletraan-card p-4 rounded-xl flex items-start gap-4">
+                <img src="logo.png" class="w-10 h-10 rounded-full border border-sky-400/50 object-cover mt-1">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="font-orbitron text-xs font-bold text-sky-400 uppercase tracking-widest">TELETRAAN SYSTEM</span>
+                        <span class="text-[10px] text-sky-600 border border-sky-800 px-1.5 rounded">INIT_SEQ_COMPLETE</span>
+                    </div>
+                    <p class="text-sm leading-relaxed text-sky-200">
+                        ⚡ <strong>Unidad de Inteligencia Académica Teletraan iniciada.</strong><br>
+                        Sube un archivo de estudio, problema en código o diagrama para comenzar el análisis autónomo guiado.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CONTROLES Y PANEL DE ENTRADA -->
+        <div class="mt-4 space-y-2">
+            <!-- Previsualización de imagen adjunta -->
+            <div id="image-preview-container" class="hidden flex items-center gap-3 bg-sky-950/60 border border-sky-700/50 p-2 px-3 rounded-lg w-fit text-xs text-sky-300">
+                <span id="image-name" class="font-mono"></span>
+                <button onclick="clearImage()" class="text-red-400 hover:text-red-300 font-bold ml-2 transition">✕</button>
+            </div>
+
+            <!-- Entrada de Texto y Botones -->
+            <div class="teletraan-card rounded-xl p-2.5 flex items-center gap-3 border-sky-500/40">
+                <label class="cursor-pointer p-2.5 rounded-lg bg-sky-950/80 hover:bg-sky-900 border border-sky-800 text-sky-400 hover:text-sky-200 transition" title="Adjuntar Imagen/Diagrama">
+                    📷
+                    <input type="file" id="image-input" accept="image/*" class="hidden" onchange="handleImage(event)">
+                </label>
+
+                <input type="text" id="user-input" 
+                       placeholder="// Ingrese comando o consulta académica..." 
+                       class="flex-1 bg-transparent border-none outline-none text-sm text-sky-100 placeholder-sky-700 font-mono tracking-wide px-2"
+                       onkeypress="if(event.key === 'Enter') sendMessage()">
+
+                <button onclick="sendMessage()" 
+                        class="font-orbitron font-bold text-xs uppercase bg-sky-600 hover:bg-sky-500 text-black px-5 py-3 rounded-lg transition teletraan-glow tracking-wider flex items-center gap-2">
+                    <span>Ejecutar</span>
+                    <span class="text-base">➢</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- PIE DE PÁGINA (FOOTER) -->
+    <footer class="text-center py-2 text-[11px] text-sky-700 border-t border-sky-950/60 font-mono">
+        TELETRAAN SERVICES // CYBERTRONIAN TECHNOLOGY // EST. 2026
+    </footer>
+
+    <!-- LÓGICA JAVASCRIPT DE CONEXIÓN CON EL BACKEND -->
+    <script>
+        // URL del Backend (Actualízala cuando subas el servidor a Render)
+        let BACKEND_URL = "http://127.0.0.1:8000/api/chat"; 
+        let currentBase64Image = null;
+
+        function handleImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentBase64Image = e.target.result;
+                document.getElementById('image-name').innerText = "📎 MEMORY_LOG: " + file.name;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearImage() {
+            currentBase64Image = null;
+            document.getElementById('image-input').value = "";
+            document.getElementById('image-preview-container').classList.add('hidden');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text && !currentBase64Image) return;
+
+            const chatBox = document.getElementById('chat-box');
+
+            // Mensaje del Usuario
+            chatBox.innerHTML += `
+                <div class="flex justify-end mb-3">
+                    <div class="bg-sky-950/80 border border-sky-500/50 p-3.5 rounded-xl max-w-lg text-sm text-sky-100">
+                        <div class="text-[10px] font-orbitron text-sky-400 mb-1 flex items-center justify-end gap-1">
+                            <span>USER_INPUT</span> <span>//</span>
+                        </div>
+                        <p class="font-sans">${text}</p>
+                        ${currentBase64Image ? `<img src="${currentBase64Image}" class="mt-2 rounded-lg max-h-48 border border-sky-800">` : ''}
+                    </div>
+                </div>
+            `;
+
+            input.value = "";
+            const imageToSend = currentBase64Image;
+            clearImage();
+
+            // Mensaje de Carga
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `
+                <div id="${loadingId}" class="flex justify-start mb-3">
+                    <div class="teletraan-card p-3.5 rounded-xl text-xs text-sky-400 animate-pulse flex items-center gap-3">
+                        <img src="logo.png" class="w-6 h-6 rounded-full animate-spin">
+                        <span class="font-orbitron tracking-wider">TELETRAAN PROCESANDO SECUENCIA ANALÍTICA...</span>
+                    </div>
+                </div>
+            `;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const res = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, image_base64: imageToSend })
+                });
+
+                const data = await res.json();
+                document.getElementById(loadingId).remove();
+
+                // Mensaje de la IA
+                chatBox.innerHTML += `
+                    <div class="flex justify-start mb-3">
+                        <div class="teletraan-card p-4 rounded-xl max-w-3xl text-sm leading-relaxed">
+                            <div class="flex items-center gap-2 mb-2 pb-2 border-b border-sky-900/60">
+                                <img src="logo.png" class="w-6 h-6 rounded-full border border-sky-400 object-cover">
+                                <span class="font-orbitron text-xs font-bold text-sky-400">TELETRAAN RESPONSE</span>
+                            </div>
+                            <div class="prose prose-invert max-w-none text-sky-100 font-sans">
+                                ${marked.parse(data.response || "Error procesando respuesta.")}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `
+                    <div class="flex justify-start mb-3">
+                        <div class="bg-red-950/80 border border-red-700/60 p-3.5 rounded-xl text-xs text-red-300 font-mono">
+                            ⚠ ERROR_CRÍTICO: No se logró comunicación con el Backend. Verifique la conexión con el servidor.
+                        </div>
+                    </div>
+                `;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
