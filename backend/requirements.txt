@@ -1,9 +1,5 @@
-streamlit
-google-genai
-pillow
 fastapi
 uvicorn
 google-genai
 pillow
 pydantic
-python-dotenv
