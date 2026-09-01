@@ -1,0 +1,100 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&display=swap');
+   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
+   
+   :root {
+       --bg-deep: #0a0b0d;           
+       --bg-carbon: #16181c;         
+       --primary-blue: #324b68;      
+       --neon-blue: #0066ff;         
+       --neon-blue-glow: rgba(0, 102, 255, 0.4);
+       --accent-copper: #c88863;     
+       --text-silver: #e2e8f0;       
+       --text-muted: #8892b0;        
+   }
+   
+   * { box-sizing: border-box; margin: 0; padding: 0; }
+   
+   body {
+       font-family: 'Rajdhani', sans-serif;
+       background-color: var(--bg-deep);
+       background-image: radial-gradient(circle at center, var(--bg-carbon) 0%, var(--bg-deep) 100%);
+       color: var(--text-silver);
+       display: flex; justify-content: center; align-items: center;
+       height: 100vh; overflow: hidden;
+   }
+   
+   .container {
+       width: 95%; max-width: 900px; height: 90vh;
+       background: rgba(22, 24, 28, 0.85);
+       backdrop-filter: blur(10px);
+       border: 1px solid var(--primary-blue);
+       border-radius: 12px; padding: 25px;
+       box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(50, 75, 104, 0.3);
+       display: flex; flex-direction: column; position: relative;
+   }
+   
+   .container::before, .container::after {
+       content: ''; position: absolute; width: 40px; height: 40px;
+       border: 2px solid var(--accent-copper); opacity: 0.5; pointer-events: none;
+   }
+   .container::before { top: -1px; left: -1px; border-right: none; border-bottom: none; border-radius: 12px 0 0 0; }
+   .container::after { bottom: -1px; right: -1px; border-left: none; border-top: none; border-radius: 0 0 12px 0; }
+   
+   header { text-align: center; margin-bottom: 20px; border-bottom: 1px solid rgba(200, 136, 99, 0.2); padding-bottom: 15px; }
+   
+   .logo { max-width: 120px; display: block; margin: 0 auto 10px; filter: drop-shadow(0 0 8px var(--neon-blue-glow)); }
+   
+   h1 {
+       font-family: 'Orbitron', sans-serif; color: var(--text-silver);
+       font-size: 2rem; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+       text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(226, 232, 240, 0.2); margin-bottom: 5px;
+   }
+   h1 span { color: var(--primary-blue); }
+   
+   .subtitle { font-family: 'Orbitron', sans-serif; color: var(--primary-blue); font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; }
+   
+   .chat-box {
+       flex: 1; overflow-y: auto; background: rgba(10, 11, 13, 0.6);
+       border: 1px solid rgba(50, 75, 104, 0.5); border-radius: 8px; padding: 20px;
+       margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;
+       scrollbar-width: thin; scrollbar-color: var(--primary-blue) transparent;
+   }
+   .chat-box::-webkit-scrollbar { width: 6px; }
+   .chat-box::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+   .chat-box::-webkit-scrollbar-thumb { background-color: var(--primary-blue); border-radius: 10px; }
+   
+   .message { max-width: 85%; padding: 12px 18px; border-radius: 6px; line-height: 1.6; font-size: 1.1rem; position: relative; animation: fadeIn 0.3s ease-in; }
+   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+   
+   .ai-message {
+       align-self: flex-start; background: rgba(50, 75, 104, 0.15);
+       border-left: 3px solid var(--neon-blue); color: var(--text-silver); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+   }
+   .ai-message::before { content: 'TELETRAAN AI'; display: block; font-family: 'Orbitron', sans-serif; font-size: 0.7rem; color: var(--neon-blue); margin-bottom: 5px; letter-spacing: 1px; }
+   
+   .user-message {
+       align-self: flex-end; background: rgba(200, 136, 99, 0.1);
+       border-right: 3px solid var(--accent-copper); color: #ffffff; text-align: left;
+   }
+   .user-message::before { content: 'USUARIO'; display: block; font-family: 'Orbitron', sans-serif; font-size: 0.7rem; color: var(--accent-copper); margin-bottom: 5px; letter-spacing: 1px; text-align: right; }
+   
+   .input-area { display: flex; gap: 15px; background: rgba(10, 11, 13, 0.8); padding: 15px; border-radius: 8px; border: 1px solid rgba(50, 75, 104, 0.5); }
+   
+   input {
+       flex: 1; padding: 15px; background: rgba(22, 24, 28, 0.5);
+       border: 1px solid var(--primary-blue); border-radius: 4px; color: var(--text-silver);
+       font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; outline: none; transition: all 0.3s ease;
+   }
+   input:focus { border-color: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue-glow); background: rgba(22, 24, 28, 0.9); }
+   input::placeholder { color: rgba(136, 146, 176, 0.5); }
+   
+   button {
+       padding: 0 30px; background: linear-gradient(135deg, var(--primary-blue) 0%, #1e2c3e 100%);
+       color: var(--text-silver); border: 1px solid var(--primary-blue); border-radius: 4px; cursor: pointer;
+       font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: 1.5px; transition: all 0.3s ease;
+   }
+   button:hover { background: var(--neon-blue); color: #fff; border-color: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue-glow); }
+   button:active { transform: scale(0.98); }
+   
+   .typing-indicator { display: none; align-self: flex-start; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--neon-blue); padding: 5px 15px; animation: pulse 1.5s infinite; }
+   @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
