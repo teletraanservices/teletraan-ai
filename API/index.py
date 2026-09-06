@@ -36,10 +36,10 @@ async def chat_endpoint(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Ruta absoluta hacia la carpeta public
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PUBLIC_DIR = os.path.join(BASE_DIR, "..", "public")
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PUBLIC_DIR = os.path.join(ROOT_DIR, "public")
 
+# Montar estáticos si existe la carpeta
 if os.path.exists(PUBLIC_DIR):
     app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="static")
 
@@ -48,4 +48,10 @@ async def serve_frontend():
     index_file = os.path.join(PUBLIC_DIR, "index.html")
     if os.path.exists(index_file):
         return FileResponse(index_file)
-    return {"message": "El archivo index.html no se encuentra en public/"}
+    
+    # Si no lo encuentra, nos dirá en qué ruta exacta está buscando en el servidor
+    return {
+        "error": "No se encontró index.html",
+        "ruta_buscada": index_file,
+        "carpetas_en_raiz": os.listdir(ROOT_DIR) if os.path.exists(ROOT_DIR) else []
+    }
