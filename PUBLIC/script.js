@@ -10,7 +10,8 @@ async function sendMessage() {
     typingIndicator.style.display = 'block';
 
     try {
-        const response = await fetch('/api/chat', {
+        // Conexión directa al backend desplegado en Render
+        const response = await fetch('https://teletraan-ai.onrender.com/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: message })
