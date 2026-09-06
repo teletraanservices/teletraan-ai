@@ -38,12 +38,14 @@ async def chat_endpoint(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Servir los archivos estáticos si se entra directamente a Render
-if os.path.exists("PUBLIC"):
-    app.mount("/static", StaticFiles(directory="PUBLIC"), name="static")
+PUBLIC_DIR = os.path.join(os.path.dirname(__file__), "..", "public")
+
+if os.path.exists(PUBLIC_DIR):
+    app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="static")
 
 @app.get("/")
 async def serve_frontend():
-    if os.path.exists(os.path.join("PUBLIC", "index.html")):
-        return FileResponse(os.path.join("PUBLIC", "index.html"))
+    index_path = os.path.join(PUBLIC_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
     return {"message": "Teletraan AI Backend está activo."}
