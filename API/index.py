@@ -13,7 +13,9 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator
 
-MODEL_NAME = "gemini-1.5-flash"
+# Gemini 2.5 Pro es el modelo de mayor capacidad para razonamiento y análisis
+# multimodal. Puede reemplazarse sin redeploy con GEMINI_MODEL en Render.
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
 MAX_HISTORY_MESSAGES = 16
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
