@@ -1,46 +1,22 @@
-async function sendMessage() {
-    const inputField = document.getElementById('user-input');
-    const message = inputField.value.trim();
-    if (!message) return;
-
-    appendMessage(message, 'user-message');
-    inputField.value = '';
-
-    const typingIndicator = document.getElementById('typing');
-    typingIndicator.style.display = 'block';
-
-    try {
-        // Conexión directa al backend desplegado en Render
-        const response = await fetch('https://teletraan-ai.onrender.com/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: message })
-        });
-
-        const data = await response.json();
-        typingIndicator.style.display = 'none';
-
-        if(response.ok) {
-            appendMessage(data.reply, 'ai-message');
-        } else {
-            throw new Error(data.detail || "Error en el servidor central.");
-        }
-    } catch (error) {
-        typingIndicator.style.display = 'none';
-        appendMessage("Falla de conexión con la red de Teletraan Services. Reintentando...", 'ai-message');
-        console.error(error);
-    }
-}
-
-document.getElementById('user-input').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') sendMessage();
-});
-
-function appendMessage(text, className) {
-    const chatBox = document.getElementById('chat-box');
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${className}`;
-    msgDiv.innerText = text;
-    chatBox.appendChild(msgDiv);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
+const STORAGE_KEY = 'teletraan-ai-history-v2', MAX_LOCAL_MESSAGES = 80, MAX_CONTEXT_MESSAGES = 14, MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+let history = loadHistory(), pendingImage = null, isSending = false;
+const chatBox = document.querySelector('#chat-box'), form = document.querySelector('#chat-form'), input = document.querySelector('#user-input'), typing = document.querySelector('#typing'), fileInput = document.querySelector('#image-input'), preview = document.querySelector('#image-preview'), sendButton = document.querySelector('#send-button');
+marked.setOptions({ breaks: true, gfm: true, highlight(code, language) { return hljs.highlight(code, { language: language && hljs.getLanguage(language) ? language : 'plaintext' }).value; } });
+function loadHistory() { try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)); return Array.isArray(saved) ? saved : []; } catch { return []; } }
+function saveHistory() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(-MAX_LOCAL_MESSAGES).map(({ image, ...item }) => item))); } catch (error) { console.warn('No fue posible guardar el historial local.', error); } }
+function scrollToLatest() { requestAnimationFrame(() => { chatBox.scrollTop = chatBox.scrollHeight; }); }
+function renderMessage(item) { const node = document.createElement('article'); node.className = `message ${item.role === 'user' ? 'user-message' : item.error ? 'ai-message error-message' : 'ai-message'}`; if (item.role === 'user') node.textContent = item.content; else node.innerHTML = DOMPurify.sanitize(marked.parse(item.content)); if (item.image) { const image = document.createElement('img'); image.src = item.image; image.alt = 'Imagen adjuntada por el usuario'; node.append(image); } chatBox.append(node); scrollToLatest(); }
+function addMessage(item) { history.push(item); history = history.slice(-MAX_LOCAL_MESSAGES); saveHistory(); renderMessage(item); }
+function welcome() { return { role: 'model', content: 'Saludos, unidad orgánica. **Teletraan-1** está en línea. Indica la consulta o adjunta una imagen para iniciar el análisis.' }; }
+function renderHistory() { chatBox.replaceChildren(); (history.length ? history : [welcome()]).forEach(renderMessage); }
+function setSending(value) { isSending = value; typing.hidden = !value; sendButton.disabled = value; fileInput.disabled = value; scrollToLatest(); }
+function resizeInput() { input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight, 150)}px`; }
+function clearAttachment() { pendingImage = null; fileInput.value = ''; preview.hidden = true; }
+function readImage(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }); }
+fileInput.addEventListener('change', async () => { const file = fileInput.files[0], supportedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']; if (!file) return; if (!supportedTypes.includes(file.type) || file.size > MAX_IMAGE_SIZE) { alert('Selecciona una imagen JPG, PNG, WEBP o GIF de hasta 5 MB.'); clearAttachment(); return; } try { const data = await readImage(file); pendingImage = { data, mime_type: file.type, name: file.name }; document.querySelector('#preview-image').src = data; document.querySelector('#preview-name').textContent = file.name; preview.hidden = false; } catch { alert('No se pudo leer la imagen seleccionada.'); clearAttachment(); } });
+document.querySelector('#attach-button').addEventListener('click', () => fileInput.click()); document.querySelector('#remove-image').addEventListener('click', clearAttachment); input.addEventListener('input', resizeInput);
+input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); form.requestSubmit(); } });
+form.addEventListener('submit', async event => { event.preventDefault(); const message = input.value.trim(); if (isSending || (!message && !pendingImage)) return; const image = pendingImage; addMessage({ role: 'user', content: message || 'Analiza esta imagen.', image: image?.data }); input.value = ''; resizeInput(); clearAttachment(); setSending(true); try { const context = history.slice(0, -1).filter(item => !item.error).slice(-MAX_CONTEXT_MESSAGES).map(item => ({ role: item.role, content: item.content })); const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message, image: image ? { data: image.data, mime_type: image.mime_type } : null, history: context }) }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.detail || `Error de enlace (${response.status}).`); addMessage({ role: 'model', content: data.reply }); } catch (error) { addMessage({ role: 'model', content: `**Error de comunicación:** ${error.message}`, error: true }); console.error(error); } finally { setSending(false); input.focus(); } });
+document.querySelector('#clear-button').addEventListener('click', () => { if (!confirm('¿Resetear la consola y eliminar el historial local?')) return; history = []; localStorage.removeItem(STORAGE_KEY); renderHistory(); });
+document.querySelector('#export-button').addEventListener('click', () => { const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), messages: history }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = 'teletraan-chat.json'; link.click(); URL.revokeObjectURL(url); });
+renderHistory(); resizeInput();

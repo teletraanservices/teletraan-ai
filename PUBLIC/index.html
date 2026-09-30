@@ -1,32 +1,14 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teletraan AI - Teletraan Services</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <img src="/static/image.png" alt="Logo de Teletraan Services" class="logo">
-            <h1>TELETRAAN <span>AI</span></h1>
-            <div class="subtitle">Cybertronian Technology • Learning Module</div>
-        </header>
-        
-        <div id="chat-box" class="chat-box">
-            <div class="message ai-message">
-                Saludos. Soy Teletraan AI, tu asistente de aprendizaje en Teletraan Services. ¿Qué disciplina deseas dominar el día de hoy? Procederemos paso a paso.
-            </div>
-        </div>
-        
-        <div id="typing" class="typing-indicator">Teletraan AI está procesando...</div>
-        
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="Ej: Inicializar módulo de Física Cuántica...">
-            <button onclick="sendMessage()">Enviar</button>
-        </div>
-    </div>
-    <script src="/static/script.js"></script>
-</body>
-</html>
+<!doctype html>
+<html lang="es"><head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#080c14">
+  <title>Teletraan AI | Terminal Cybertroniano</title>
+  <link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
+</head><body>
+  <main class="container" aria-label="Consola de Teletraan AI">
+    <header class="app-header"><img src="/static/image.png" alt="Logo de Teletraan Services" class="logo"><div><h1>TELETRAAN <span>AI</span></h1><p class="subtitle">NÚCLEO ESTRATÉGICO · MÓDULO DE APRENDIZAJE</p></div><div class="header-actions"><button id="export-button" class="icon-button" title="Exportar conversación en JSON" aria-label="Exportar conversación">⇩</button><button id="clear-button" class="icon-button danger" title="Limpiar chat" aria-label="Limpiar chat">⌫</button></div></header>
+    <section id="chat-box" class="chat-box" aria-live="polite" aria-label="Historial del chat"></section>
+    <div id="typing" class="typing-indicator" role="status" aria-live="polite" hidden><span class="scanner"></span><span>TELETRAAN ANALIZANDO DATOS</span><i></i><i></i><i></i></div>
+    <form id="chat-form" class="composer"><div id="image-preview" class="image-preview" hidden><img id="preview-image" alt="Previsualización del archivo adjunto"><span id="preview-name"></span><button type="button" id="remove-image" aria-label="Quitar imagen">×</button></div><div class="input-area"><input id="image-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden><button type="button" id="attach-button" class="icon-button" title="Adjuntar imagen" aria-label="Adjuntar imagen">⌁</button><textarea id="user-input" rows="1" maxlength="12000" placeholder="Inicializar consulta..." aria-label="Mensaje"></textarea><button id="send-button" type="submit">Enviar <span>↗</span></button></div><p class="hint">Enter para transmitir · Shift + Enter para nueva línea · imágenes hasta 5 MB</p></form>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script><script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.3/dist/purify.min.js"></script><script src="/static/script.js"></script>
+</body></html>
