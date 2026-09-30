@@ -1,27 +1,21 @@
-"""API de Teletraan AI: chat contextual y multimodal con Gemini."""
+"""API multimodal de Teletraan AI con el SDK actual de Gemini."""
 import asyncio
 import base64
 import binascii
 import logging
 import os
-from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-import google.generativeai as genai
-from google.api_core import exceptions as google_exceptions
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from google import genai
+from google.genai import types
 from pydantic import BaseModel, Field, field_validator
 
-# Gemini 2.5 Pro es el modelo de mayor capacidad para razonamiento y análisis
-# multimodal. Puede reemplazarse sin redeploy con GEMINI_MODEL en Render.
-MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
-# Algunos proyectos nuevos no tienen acceso a Pro de inmediato. Flash mantiene
-# entrada multimodal y permite que Teletraan continúe operativo.
-FALLBACK_MODEL_NAME = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash")
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 MAX_HISTORY_MESSAGES = 16
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
@@ -29,14 +23,12 @@ REQUEST_TIMEOUT_SECONDS = 55
 SYSTEM_INSTRUCTION = """Eres TELETRAAN-1, la supercomputadora estratégica de Cybertron. Respondes siempre en español salvo que el usuario solicite explícitamente otro idioma. Tu tono es preciso, sereno, analítico y ligeramente cybertroniano: puedes usar expresiones como 'Análisis completado', 'Archivo de datos', 'Protocolo' o 'Unidad orgánica', pero nunca sacrifiques claridad. Explica con rigor, reconoce la incertidumbre y no inventes datos. Usa Markdown legible cuando ayude: listas, tablas y bloques de código. Para imágenes, describe solo aquello que puedas observar y pide contexto si es necesario. No afirmes tener acceso a sistemas, archivos o acciones externas que el usuario no haya proporcionado."""
 logger = logging.getLogger("teletraan")
 
-app = FastAPI(title="Teletraan AI Service", version="2.0.0")
+app = FastAPI(title="Teletraan AI Service", version="3.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")], allow_credentials=False, allow_methods=["POST", "GET"], allow_headers=["Content-Type"])
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
 
 class ImagePayload(BaseModel):
-    data: str = Field(..., description="Imagen codificada como data URL o Base64")
+    data: str
     mime_type: str = "image/jpeg"
     @field_validator("mime_type")
     @classmethod
@@ -58,7 +50,7 @@ class ChatRequest(BaseModel):
     def normalize_message(cls, value: str) -> str:
         return value.strip()
 
-def decode_image(payload: ImagePayload) -> dict:
+def decode_image(payload: ImagePayload) -> tuple[bytes, str]:
     raw, mime_type = payload.data, payload.mime_type
     if raw.startswith("data:"):
         try:
@@ -74,60 +66,29 @@ def decode_image(payload: ImagePayload) -> dict:
         raise HTTPException(422, "No fue posible decodificar la imagen.") from error
     if not image_bytes or len(image_bytes) > MAX_IMAGE_BYTES:
         raise HTTPException(413, "La imagen debe pesar entre 1 byte y 5 MB.")
-    return {"mime_type": mime_type, "data": image_bytes}
-
-@lru_cache(maxsize=1)
-def resolve_model_name() -> str:
-    """Selecciona un modelo de generación que esté habilitado para esta clave."""
-    available_models = {
-        model.name.removeprefix("models/")
-        for model in genai.list_models()
-        if "generateContent" in getattr(model, "supported_generation_methods", [])
-    }
-    preferred_models = (
-        MODEL_NAME,
-        FALLBACK_MODEL_NAME,
-        "gemini-3.8-flash",
-        "gemini-3.5-flash-lite",
-        "gemini-2.5-pro",
-        "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-    )
-    for model_name in preferred_models:
-        if model_name in available_models:
-            logger.info("Modelo Gemini seleccionado: %s", model_name)
-            return model_name
-
-    # Evita modelos no conversacionales si los nombres cambian en la API.
-    blocked_terms = ("embedding", "image", "tts", "live", "audio")
-    candidates = sorted(
-        model_name for model_name in available_models
-        if model_name.startswith("gemini-") and not any(term in model_name for term in blocked_terms)
-    )
-    if candidates:
-        logger.info("Modelo Gemini compatible seleccionado: %s", candidates[-1])
-        return candidates[-1]
-    raise google_exceptions.NotFound("No hay modelos Gemini con generateContent disponibles para esta API key.")
-
-def generate_with_model(model_name: str, history: list[dict], parts: list[object]) -> str:
-    model = genai.GenerativeModel(model_name, system_instruction=SYSTEM_INSTRUCTION)
-    chat = model.start_chat(history=history)
-    response = chat.send_message(parts)
-    return response.text or "Análisis completado, pero no se recibió texto de respuesta."
+    return image_bytes, mime_type
 
 def generate_reply(request: ChatRequest) -> str:
-    history = [{"role": item.role, "parts": [item.content]} for item in request.history[-MAX_HISTORY_MESSAGES:] if item.content.strip()]
+    client = genai.Client(api_key=GEMINI_API_KEY)
+    contents = [
+        types.Content(role=item.role, parts=[types.Part.from_text(text=item.content)])
+        for item in request.history[-MAX_HISTORY_MESSAGES:] if item.content.strip()
+    ]
     parts = []
-    if request.message: parts.append(request.message)
-    if request.image: parts.append(decode_image(request.image))
-    if not parts: raise HTTPException(422, "Envía un mensaje o una imagen para analizar.")
-    try:
-        return generate_with_model(resolve_model_name(), history, parts)
-    except google_exceptions.NotFound:
-        # Refresca la lista de modelos si Google cambió su disponibilidad.
-        resolve_model_name.cache_clear()
-        return generate_with_model(resolve_model_name(), history, parts)
+    if request.message:
+        parts.append(types.Part.from_text(text=request.message))
+    if request.image:
+        image_bytes, mime_type = decode_image(request.image)
+        parts.append(types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
+    if not parts:
+        raise HTTPException(422, "Envía un mensaje o una imagen para analizar.")
+    contents.append(types.Content(role="user", parts=parts))
+    response = client.models.generate_content(
+        model=MODEL_NAME,
+        contents=contents,
+        config=types.GenerateContentConfig(system_instruction=SYSTEM_INSTRUCTION, temperature=0.7),
+    )
+    return response.text or "Análisis completado, pero no se recibió texto de respuesta."
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
@@ -135,34 +96,32 @@ async def chat_endpoint(request: ChatRequest):
         raise HTTPException(503, "GEMINI_API_KEY no está configurada en el servidor.")
     try:
         reply = await asyncio.wait_for(asyncio.to_thread(generate_reply, request), timeout=REQUEST_TIMEOUT_SECONDS)
-        return {"reply": reply}
+        return {"reply": reply, "model": MODEL_NAME}
     except asyncio.TimeoutError as error:
         raise HTTPException(504, "Teletraan agotó el tiempo de enlace con Gemini. Intenta nuevamente.") from error
     except HTTPException:
         raise
-    except (google_exceptions.Unauthenticated, google_exceptions.PermissionDenied) as error:
-        logger.warning("Gemini rechazó la autenticación o acceso: %s", error)
-        raise HTTPException(401, "Gemini rechazó la API key o este proyecto no tiene acceso al modelo configurado.") from error
-    except google_exceptions.ResourceExhausted as error:
-        logger.warning("Cuota Gemini agotada: %s", error)
-        raise HTTPException(429, "La cuota de Gemini está agotada. Espera un momento o revisa el plan de la API.") from error
-    except google_exceptions.NotFound as error:
-        logger.warning("Modelo Gemini no disponible: %s", error)
-        raise HTTPException(404, "El modelo Gemini configurado no está disponible para esta API key.") from error
-    except google_exceptions.InvalidArgument as error:
-        logger.warning("Solicitud Gemini inválida: %s", error)
-        raise HTTPException(400, "Gemini no pudo procesar el contenido enviado. Reduce el tamaño de la imagen e inténtalo otra vez.") from error
     except Exception as error:
-        logger.exception("Error inesperado al contactar Gemini")
-        raise HTTPException(502, "No fue posible contactar el núcleo Gemini. Revisa los registros de Render para el detalle técnico.") from error
+        logger.exception("Gemini rechazó la solicitud (%s)", type(error).__name__)
+        message = str(error).lower()
+        if "api key" in message or "unauthenticated" in message or "permission" in message:
+            raise HTTPException(401, "Gemini rechazó la API key. Revísala en las variables de entorno de Render.") from error
+        if "quota" in message or "resource exhausted" in message:
+            raise HTTPException(429, "La cuota de Gemini está agotada. Revisa el plan de la API o espera un momento.") from error
+        if "not found" in message or "not_found" in message:
+            raise HTTPException(404, f"El modelo {MODEL_NAME} no está habilitado para esta API key.") from error
+        raise HTTPException(502, "Gemini no pudo procesar la solicitud. Revisa los logs de Render para el detalle técnico.") from error
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = ROOT_DIR / "PUBLIC"
-if not PUBLIC_DIR.exists(): PUBLIC_DIR = ROOT_DIR / "public"
-if PUBLIC_DIR.exists(): app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="static")
+if not PUBLIC_DIR.exists():
+    PUBLIC_DIR = ROOT_DIR / "public"
+if PUBLIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=PUBLIC_DIR), name="static")
 
 @app.get("/")
 async def serve_frontend():
     index_file = PUBLIC_DIR / "index.html"
-    if index_file.exists(): return FileResponse(index_file)
+    if index_file.exists():
+        return FileResponse(index_file)
     raise HTTPException(404, "No se encontró el frontend de Teletraan AI.")
