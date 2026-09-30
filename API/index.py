@@ -4,6 +4,7 @@ import base64
 import binascii
 import logging
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -75,6 +76,40 @@ def decode_image(payload: ImagePayload) -> dict:
         raise HTTPException(413, "La imagen debe pesar entre 1 byte y 5 MB.")
     return {"mime_type": mime_type, "data": image_bytes}
 
+@lru_cache(maxsize=1)
+def resolve_model_name() -> str:
+    """Selecciona un modelo de generación que esté habilitado para esta clave."""
+    available_models = {
+        model.name.removeprefix("models/")
+        for model in genai.list_models()
+        if "generateContent" in getattr(model, "supported_generation_methods", [])
+    }
+    preferred_models = (
+        MODEL_NAME,
+        FALLBACK_MODEL_NAME,
+        "gemini-3.8-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+    )
+    for model_name in preferred_models:
+        if model_name in available_models:
+            logger.info("Modelo Gemini seleccionado: %s", model_name)
+            return model_name
+
+    # Evita modelos no conversacionales si los nombres cambian en la API.
+    blocked_terms = ("embedding", "image", "tts", "live", "audio")
+    candidates = sorted(
+        model_name for model_name in available_models
+        if model_name.startswith("gemini-") and not any(term in model_name for term in blocked_terms)
+    )
+    if candidates:
+        logger.info("Modelo Gemini compatible seleccionado: %s", candidates[-1])
+        return candidates[-1]
+    raise google_exceptions.NotFound("No hay modelos Gemini con generateContent disponibles para esta API key.")
+
 def generate_with_model(model_name: str, history: list[dict], parts: list[object]) -> str:
     model = genai.GenerativeModel(model_name, system_instruction=SYSTEM_INSTRUCTION)
     chat = model.start_chat(history=history)
@@ -88,10 +123,11 @@ def generate_reply(request: ChatRequest) -> str:
     if request.image: parts.append(decode_image(request.image))
     if not parts: raise HTTPException(422, "Envía un mensaje o una imagen para analizar.")
     try:
-        return generate_with_model(MODEL_NAME, history, parts)
+        return generate_with_model(resolve_model_name(), history, parts)
     except google_exceptions.NotFound:
-        # Solo se intenta el respaldo cuando Pro no existe para el proyecto.
-        return generate_with_model(FALLBACK_MODEL_NAME, history, parts)
+        # Refresca la lista de modelos si Google cambió su disponibilidad.
+        resolve_model_name.cache_clear()
+        return generate_with_model(resolve_model_name(), history, parts)
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
