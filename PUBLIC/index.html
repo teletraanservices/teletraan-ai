@@ -20,7 +20,13 @@
     </nav>
   </header>
 
-  <main class="app-shell" id="terminal" aria-label="Terminal de Teletraan AI">
+  <main class="workspace" id="terminal" aria-label="Terminal de Teletraan AI">
+    <aside class="conversation-sidebar" aria-label="Conversaciones">
+      <div class="sidebar-heading"><span>ARCHIVOS DE MISIÓN</span><button id="new-chat-button" type="button">＋ Nueva conversación</button></div>
+      <div id="conversation-list" class="conversation-list" aria-live="polite"></div>
+      <p class="sidebar-note">Las conversaciones se guardan únicamente en este navegador.</p>
+    </aside>
+    <section class="app-shell">
     <section class="ai-intro">
       <img src="/static/image.png" alt="" class="hero-logo">
       <div><p class="eyebrow">SISTEMA DE INTELIGENCIA ESTRATÉGICA</p><h1>TELETRAAN <span>AI</span></h1><p>Consulta, analiza y crea junto al núcleo de inteligencia de Teletraan Services.</p></div>
@@ -36,6 +42,7 @@
         <div class="input-area"><input id="image-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden><button type="button" id="attach-button" class="icon-button" title="Adjuntar imagen" aria-label="Adjuntar imagen">⌁</button><textarea id="user-input" rows="1" maxlength="12000" placeholder="Inicializar consulta..." aria-label="Mensaje"></textarea><button id="send-button" type="submit">Enviar <span>↗</span></button></div>
         <p class="hint">Enter para transmitir · Shift + Enter para nueva línea · imágenes hasta 5 MB</p>
       </form>
+    </section>
     </section>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script><script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.3/dist/purify.min.js"></script><script src="/static/script.js?v=20260930-2"></script>
